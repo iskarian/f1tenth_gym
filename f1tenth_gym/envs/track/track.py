@@ -2,21 +2,20 @@ from __future__ import annotations
 import time
 import uuid
 import pathlib
-from dataclasses import dataclass
+from marshmallow_dataclass import dataclass
 from typing import Tuple, Optional
 
 import numpy as np
 import yaml
 from PIL import Image
 from PIL.Image import Transpose
-from yamldataclassconfig.config import YamlDataClassConfig
 
 from . import Raceline
 from .cubic_spline import CubicSplineND
 from .utils import find_track_dir
 
 @dataclass
-class TrackSpec(YamlDataClassConfig):
+class TrackSpec:
     """Track specification loaded from YAML config file.
 
     Attributes:
@@ -28,7 +27,6 @@ class TrackSpec(YamlDataClassConfig):
         occupied_thresh: Threshold for occupied cells.
         free_thresh: Threshold for free cells.
     """
-
     name: Optional[str]
     image: Optional[str]
     resolution: float
@@ -115,7 +113,8 @@ class Track:
         """
         with open(filespec, "r") as yaml_stream:
             map_metadata = yaml.safe_load(yaml_stream)
-            track_spec = TrackSpec(name=track, **map_metadata)
+            track_spec = TrackSpec.Schema().load(map_metadata)
+            track_spec.name = track
         return track_spec
 
     @staticmethod
@@ -146,9 +145,7 @@ class Track:
             yaml_path = track_dir / f"{track_dir.stem}.yaml"
             if not yaml_path.exists():
                 yaml_path = track_dir / f"{track_dir.stem}_map.yaml"
-            track_spec = Track.load_spec(
-                track=track, filespec=str(yaml_path)
-            )
+            track_spec = Track.load_spec(track=track, filespec=str(yaml_path))
             track_spec.resolution = track_spec.resolution * track_scale
             track_spec.origin = (
                 track_spec.origin[0] * track_scale,
@@ -218,9 +215,10 @@ class Track:
             if type(path) is str:
                 path = pathlib.Path(path)
 
-            track_spec = Track.load_spec(
-                track=path.stem, filespec=path.parent / f"{path.stem}_map.yaml"
-            )
+            if not path.exists():
+                path = path.parent / f"{path.stem}_map.yaml"
+
+            track_spec = Track.load_spec(track=path.stem, filespec=str(path))
             track_spec.resolution = track_spec.resolution * track_scale
             track_spec.origin = (
                 track_spec.origin[0] * track_scale,

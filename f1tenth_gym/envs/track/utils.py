@@ -1,9 +1,9 @@
 import pathlib
 import tarfile
-import tempfile
+import urllib.error
+import urllib.request
 
 import numpy as np
-import requests
 from numba import njit
 
 def find_track_dir(track_name: str) -> pathlib.Path:
@@ -24,17 +24,13 @@ def find_track_dir(track_name: str) -> pathlib.Path:
     if not (map_dir / track_name).exists():
         print("Downloading Files for: " + track_name)
         tracks_url = "https://api.f1tenth.org/" + track_name + ".tar.xz"
-        tracks_r = requests.get(url=tracks_url, allow_redirects=True)
-        if tracks_r.status_code == 404:
-            raise FileNotFoundError(f"No maps exists for {track_name}.")
-
-        tempdir = tempfile.gettempdir() + "/"
-
-        with open(tempdir + track_name + ".tar.xz", "wb") as f:
-            f.write(tracks_r.content)
+        try:
+            tracks_r = urllib.request.urlopen(tracks_url)
+        except urllib.error.URLError as e:
+            raise FileNotFoundError(f"No maps exists for {track_name}.") from e
 
         print("Extracting Files for: " + track_name)
-        with tarfile.open(tempdir + track_name + ".tar.xz") as tracks_file:
+        with tracks_r, tarfile.open(fileobj=tracks_r, mode="r|xz") as tracks_file:
             tracks_file.extractall(map_dir, filter="data")
 
     # search for map in the map directory

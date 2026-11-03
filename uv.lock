@@ -556,7 +556,6 @@ dependencies = [
     { name = "pyqt6" },
     { name = "pyqtgraph" },
     { name = "pyyaml" },
-    { name = "requests" },
     { name = "scikit-image" },
     { name = "scipy" },
 ]
@@ -625,7 +624,6 @@ requires-dist = [
     { name = "pyqt6", specifier = ">=6.7.1,<7" },
     { name = "pyqtgraph", specifier = ">=0.13.7,<0.14" },
     { name = "pyyaml", specifier = ">=5.3.1" },
-    { name = "requests", specifier = ">=2.31.0" },
     { name = "sbx-rl", marker = "extra == 'sbx'", specifier = ">=0.28,<0.29" },
     { name = "scikit-image", specifier = ">=0.25" },
     { name = "scipy", specifier = ">=1.13.0" },

@@ -135,7 +135,8 @@ dispatches on which one it got:
 * a bare name — no path separator and no suffix, such as ``"Spielberg"`` —
   goes to :meth:`Track.from_track_name
   <f1tenth_gym.envs.track.track.Track.from_track_name>`, which looks under the
-  repository-root ``maps/`` directory and downloads the track if it is absent;
+  repository-root ``maps/`` directory and downloads the track to the user cache
+  if it is absent;
 * a path — anything containing ``/``, ``\`` or a file suffix — goes to
   :meth:`Track.from_track_path
   <f1tenth_gym.envs.track.track.Track.from_track_path>`, which accepts the track
@@ -154,11 +155,13 @@ All three path forms reach the same map:
 343.3222
 343.3222
 
-The first request for a built-in name fetches
+A built-in name is looked up first in a ``maps/`` directory resolved four levels
+up from the package source, which an editable clone provides and a built wheel
+does not (:doc:`installation`), and then in the user cache directory
+(``~/.cache/f1tenth_gym/maps`` on Linux).
+If neither has it, the first request fetches
 ``https://api.f1tenth.org/<name>.tar.xz`` and extracts it — with tar's
-``filter="data"`` hardening, and no checksum — into a ``maps/`` directory
-resolved four levels up from the package source, which an editable clone
-provides and a built wheel does not (:doc:`installation`). A name the endpoint
+``filter="data"`` hardening, and no checksum — into the cache directory. A name the endpoint
 does not serve raises ``FileNotFoundError("No maps exists for <name>.")``.
 
 Reaching for the third form is the highest-leverage change available when

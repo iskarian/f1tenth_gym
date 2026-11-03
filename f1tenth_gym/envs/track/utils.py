@@ -5,10 +5,14 @@ import urllib.request
 
 import numpy as np
 from numba import njit
+from platformdirs import user_cache_dir
 
 def find_track_dir(track_name: str) -> pathlib.Path:
     """
     Find the directory of the track map corresponding to the given track name.
+
+    The repository ``maps/`` directory and the user cache directory are searched
+    before downloading. A missing track is downloaded into the user cache.
 
     Args:
         track_name: name of the track (str).
@@ -20,8 +24,15 @@ def find_track_dir(track_name: str) -> pathlib.Path:
         FileNotFoundError: if no map directory matching the track name is found.
     """
     map_dir = pathlib.Path(__file__).parent.parent.parent.parent / "maps"
+    cache_map_dir = user_cache_dir("f1tenth_gym", False) / "maps"
 
-    if not (map_dir / track_name).exists():
+    def _find_track_in(path):
+        if path.is_dir():
+            for subdir in path.iterdir():
+                if track_name == subdir.stem.replace(" ", ""):
+                    return subdir
+
+    if not (track_dir := _find_track_in(map_dir) or _find_track_in(cache_map_dir)):
         print("Downloading Files for: " + track_name)
         tracks_url = "https://api.f1tenth.org/" + track_name + ".tar.xz"
         try:
@@ -30,15 +41,16 @@ def find_track_dir(track_name: str) -> pathlib.Path:
             raise FileNotFoundError(f"No maps exists for {track_name}.") from e
 
         print("Extracting Files for: " + track_name)
+        cache_map_dir.mkdir(parents=True, exist_ok=True)
         with tracks_r, tarfile.open(fileobj=tracks_r, mode="r|xz") as tracks_file:
-            tracks_file.extractall(map_dir, filter="data")
+            tracks_file.extractall(cache_map_dir, filter="data")
+        track_dir = _find_track_in(cache_map_dir)
 
-    # search for map in the map directory
-    for subdir in map_dir.iterdir():
-        if track_name == str(subdir.stem).replace(" ", ""):
-            return subdir
+    if track_dir:
+        return track_dir
 
-    raise FileNotFoundError(f"no mapdir matching {track_name} in {[map_dir]}")
+    raise FileNotFoundError(f"no mapdir matching {track_name} in {[map_dir, cache_map_dir]}")
+
 
 @njit(fastmath=False, cache=True)
 def nearest_point_on_trajectory(point: np.ndarray, trajectory: np.ndarray) -> tuple:
